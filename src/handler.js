@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 const { nanoid } = require('nanoid');
-const books = require('./books');
+const bookCollection = require('./books');
 
 const addBookHandler = (request, h) => {
   const {
@@ -45,9 +45,9 @@ const addBookHandler = (request, h) => {
     updatedAt,
   };
 
-  books.push(newBook);
+  bookCollection.push(newBook);
 
-  const isSuccess = books.filter((book) => book.id === id).length > 0;
+  const isSuccess = bookCollection.filter((book) => book.id === id).length > 0;
 
   if (isSuccess) {
     const response = h.response({
@@ -70,40 +70,61 @@ const addBookHandler = (request, h) => {
 };
 
 const getAllBookHandler = (request, h) => {
-  const { name, reading, finished } = request.query;
-
-  if (name === undefined && reading === undefined && finished === undefined) {
+  const { reading, finished } = request.query;
+  const queryName = request.query.name;
+  if (queryName === undefined && reading === undefined && finished === undefined) {
     return {
       status: 'success',
       data: {
-        books,
+        books: bookCollection.map((book) => {
+          const { id, name, publisher } = book;
+          return {
+            id, name, publisher,
+          };
+        }),
       },
     };
   }
 
-  let book = [];
-  if (name !== undefined) {
+  if (queryName !== undefined) {
     return {
       status: 'success',
       data: {
-        ...books.filter((n) => n.name.toLowerCase().includes(name.toLowerCase())),
+        books: bookCollection.filter((n) => n.name.toLowerCase().includes(queryName.toLowerCase()))
+          .map((book) => {
+            const { id, name, publisher } = book;
+            return {
+              id, name, publisher,
+            };
+          }),
       },
     };
   }
 
   if (reading !== undefined) {
-    book = books.filter((n) => n.reading === reading);
-  }
-
-  if (finished !== undefined) {
-    book = books.filter((n) => n.finished === finished);
-  }
-
-  if (book !== undefined) {
     return {
       status: 'success',
       data: {
-        book,
+        books: bookCollection.filter((n) => +n.reading === +reading).map((book) => {
+          const { id, name, publisher } = book;
+          return {
+            id, name, publisher,
+          };
+        }),
+      },
+    };
+  }
+
+  if (finished !== undefined) {
+    return {
+      status: 'success',
+      data: {
+        books: bookCollection.filter((n) => +n.finished === +finished).map((book) => {
+          const { id, name, publisher } = book;
+          return {
+            id, name, publisher,
+          };
+        }),
       },
     };
   }
@@ -120,7 +141,7 @@ const getAllBookHandler = (request, h) => {
 const getBookByIdHandler = (request, h) => {
   const { bookId } = request.params;
 
-  const book = books.filter((n) => n.id === bookId)[0];
+  const book = bookCollection.filter((n) => n.id === bookId)[0];
 
   if (book !== undefined) {
     return {
@@ -167,10 +188,10 @@ const editBookByIdHandler = (request, h) => {
   const finished = pageCount === readPage;
   const updatedAt = new Date().toISOString();
 
-  const index = books.findIndex((n) => n.id === bookId);
+  const index = bookCollection.findIndex((n) => n.id === bookId);
   if (index !== -1) {
-    books[index] = {
-      ...books[index],
+    bookCollection[index] = {
+      ...bookCollection[index],
       name,
       year,
       author,
@@ -204,10 +225,10 @@ const editBookByIdHandler = (request, h) => {
 const deleteBookByIdHandler = (request, h) => {
   const { bookId } = request.params;
 
-  const index = books.findIndex((n) => n.id === bookId);
+  const index = bookCollection.findIndex((n) => n.id === bookId);
 
   if (index !== -1) {
-    books.splice(index, 1);
+    bookCollection.splice(index, 1);
 
     const response = h.response({
       status: 'success',
